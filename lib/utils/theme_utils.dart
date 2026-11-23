@@ -1,6 +1,7 @@
 import 'package:PiliPlus/common/style.dart';
 import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/font_utils.dart';
+import 'package:PiliPlus/utils/platform_font.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoThemeData;
 import 'package:flutter/foundation.dart' show PlatformDispatcher;
@@ -33,7 +34,7 @@ abstract final class ThemeUtils {
     bool isDark = false,
   }) {
     final fontWeight = Pref.appFontWeight;
-    final fontFamily = FontUtils.fontFamily;
+    final fontFamily = FontUtils.fontFamily ?? bundledCjkPrimary;
 
     TextTheme? textTheme;
     if (fontWeight != .normal) {

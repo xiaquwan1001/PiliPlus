@@ -273,6 +273,9 @@ flutter:
     - path: assets/shaders/
 
   fonts:
+    - family: PiliPlusCjk
+      fonts:
+        - asset: assets/fonts/WenQuanYiMicroHei.ttf
     - family: digital_id_num
       fonts:
         - asset: assets/fonts/digital_id_num.ttf
