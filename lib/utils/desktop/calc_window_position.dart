@@ -8,12 +8,12 @@ const _displayManager = nativeapi.DisplayManager.instance;
 
 nativeapi.Rectangle calcWindowBounds() {
   final windowSize = Pref.windowSize;
-  final offset = calcWindowPosition(windowSize);
+  final clamped = calcWindowPosition(windowSize);
   return nativeapi.Rectangle(
-    x: offset.dx,
-    y: offset.dy,
-    width: offset.width,
-    height: offset.height,
+    x: clamped.dx,
+    y: clamped.dy,
+    width: clamped.width,
+    height: clamped.height,
   );
 }
 
@@ -37,7 +37,9 @@ nativeapi.Rectangle calcWindowBounds() {
   return (dx: dx, dy: dy, width: width, height: height);
 }
 
-Offset calcWindowPosition(Size windowSize) {
+({double dx, double dy, double width, double height}) calcWindowPosition(
+  Size windowSize,
+) {
   final displays = _displayManager.getAll();
   final cursorPosition = _displayManager.getCursorPosition().toOffset();
 
@@ -48,7 +50,9 @@ Offset calcWindowPosition(Size windowSize) {
       ) ??
       _displayManager.getPrimary();
 
-  if (currentDisplay == null) return .zero;
+  if (currentDisplay == null) {
+    return (dx: 0, dy: 0, width: windowSize.width, height: windowSize.height);
+  }
 
   final workArea = currentDisplay.workArea;
 
@@ -58,13 +62,12 @@ Offset calcWindowPosition(Size windowSize) {
       final dx = windowPosition[0];
       final dy = windowPosition[1];
       if (dx >= 0 && dy >= 0) {
-        final clamped = _clampToWorkArea(workArea, windowSize, Offset(dx, dy));
-        return Offset(clamped.dx, clamped.dy);
+        return _clampToWorkArea(workArea, windowSize, Offset(dx, dy));
       }
     } catch (_) {}
   }
 
-  final center = _clampToWorkArea(
+  return _clampToWorkArea(
     workArea,
     windowSize,
     Offset(
@@ -72,5 +75,4 @@ Offset calcWindowPosition(Size windowSize) {
       workArea.y + (workArea.height - windowSize.height) / 2,
     ),
   );
-  return Offset(center.dx, center.dy);
 }
