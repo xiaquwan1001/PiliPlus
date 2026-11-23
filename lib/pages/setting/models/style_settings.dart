@@ -52,9 +52,10 @@ import 'package:path/path.dart' as path;
 
 List<SettingsModel> get styleSettings => [
   if (PlatformUtils.isDesktop) ...[
-    const SwitchModel(
+    // 非 const：defaultVal 依赖运行期 Platform.isLinux
+    SwitchModel(
       title: '显示窗口标题栏',
-      leading: Icon(Icons.window),
+      leading: const Icon(Icons.window),
       setKey: SettingBoxKey.showWindowTitleBar,
       defaultVal: !Platform.isLinux,
       needReboot: true,
