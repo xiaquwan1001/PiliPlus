@@ -17,6 +17,7 @@ import 'package:PiliPlus/services/logger.dart';
 import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/utils/cache_manager.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
+import 'package:nativeapi/nativeapi.dart' as nativeapi;
 import 'package:PiliPlus/utils/desktop/calc_window_position.dart';
 import 'package:PiliPlus/utils/device_utils.dart';
 import 'package:PiliPlus/utils/extension/core_palettes_ext.dart';
@@ -212,6 +213,32 @@ void main() async {
         ..isVisibleInTaskbar = true
         ..title = Constants.appName;
       if (useContentUnderTitleBar) window.setContentUnderTitleBar(true);
+      if (Platform.isLinux) {
+        // phosh 等 Wayland 手机/平板面板是 layer-shell；窗口若以全屏状态或
+        // 全屏尺寸恢复会压在状态栏下面（GDK 不感知 exclusive zone，
+        // workArea 拿不到面板高度）。① 退出误存的全屏态；② 恢复尺寸几乎
+        // 覆盖整屏时改用 maximize，由合成器按面板排除区排版。
+        if (window.isFullScreen) window.isFullScreen = false;
+        final bounds = window.bounds;
+        final displays = nativeapi.DisplayManager.instance.getAll();
+        final display = displays.firstWhereOrNull(
+          (d) => (d.position.toOffset() & d.size.toSize()).overlaps(
+            Rect.fromLTWH(
+              bounds.x,
+              bounds.y,
+              bounds.width,
+              bounds.height,
+            ),
+          ),
+        );
+        if (display != null) {
+          final size = display.size;
+          if (bounds.width >= size.width * 0.99 &&
+              bounds.height >= size.height * 0.99) {
+            window.maximize();
+          }
+        }
+      }
       if (Pref.isWindowMaximized) window.maximize();
       void show([_]) => window
         ..focus()
