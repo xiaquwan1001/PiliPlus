@@ -1021,7 +1021,7 @@ abstract final class Pref {
       _setting.get(SettingBoxKey.pauseOnMinimize, defaultValue: false);
 
   static bool get showWindowTitleBar =>
-      _setting.get(SettingBoxKey.showWindowTitleBar, defaultValue: true);
+      _setting.get(SettingBoxKey.showWindowTitleBar, defaultValue: !Platform.isLinux);
 
   static double get desktopVolume =>
       _setting.get(SettingBoxKey.desktopVolume, defaultValue: 1.0);

@@ -56,7 +56,7 @@ List<SettingsModel> get styleSettings => [
       title: '显示窗口标题栏',
       leading: Icon(Icons.window),
       setKey: SettingBoxKey.showWindowTitleBar,
-      defaultVal: true,
+      defaultVal: !Platform.isLinux,
       needReboot: true,
     ),
     const SwitchModel(
