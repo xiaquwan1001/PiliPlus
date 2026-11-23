@@ -64,7 +64,7 @@ jobs:
 
           printf "修改控制文件...\n"
           sed -i "2s/version_need_change/${{ env.version }}/g" DEBIAN/control
-          sed -i "6s/^Architecture:.*/Architecture: arm64/g" DEBIAN/control
+          sed -i "s/^Architecture:.*/Architecture: arm64/" DEBIAN/control
           SIZE_KB=$(du -s -b --apparent-size . | awk '{print int($1)}')
           SIZE_KB=$(($SIZE_KB - $(du -s -b --apparent-size DEBIAN | awk '{print int($1)}')))
           SIZE_KB=$(echo $SIZE_KB | awk '{print int($1/1024 + 0.999)}')
