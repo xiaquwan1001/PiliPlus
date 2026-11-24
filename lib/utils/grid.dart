@@ -19,6 +19,29 @@ mixin GridMixin<T extends StatefulWidget> on State<T> {
 abstract class Grid {
   static final double smallCardWidth = Pref.smallCardWidth;
 
+  /// H 卡片瓦片宽度下限：至少留 180dp 文字区。
+  ///
+  /// 封面宽度不是固定值：瓦片高度由 [childAspectRatio] 决定，封面宽 = 高 ×
+  /// [StyleString.aspectRatio]，因此封面占瓦片宽的比例恒为
+  /// `aspectRatio / childAspectRatio`。窄窗口（480~700dp：平板竖屏、分屏、
+  /// 小窗）若只按 maxCrossAxisExtent 算列数，会得到两列 ~317dp 的瓦片，
+  /// 文字区只剩 ~150dp，播放数/弹幕数横向溢出被切掉。
+  static double videoCardHMinWidth({
+    required double minHeight,
+    required double childAspectRatio,
+    double crossAxisSpacing = 0,
+  }) {
+    const textMinWidth = 180.0;
+    const padding = StyleString.safeSpace * 2;
+    final fixed = padding + crossAxisSpacing + textMinWidth;
+    // ① 瓦片高度按 childAspectRatio 缩放时，封面占宽比例恒定。
+    final coverRatio = StyleString.aspectRatio / childAspectRatio;
+    final byRatio = fixed / (1 - coverRatio);
+    // ② 瓦片高度被 minHeight 托底（窄瓦片）时，封面宽固定。
+    final byFloor = minHeight * StyleString.aspectRatio + fixed;
+    return max(byFloor, byRatio);
+  }
+
   static SliverGridDelegateWithExtentAndRatio videoCardHDelegate(
     BuildContext context, {
     double minHeight = 90,
@@ -27,6 +50,10 @@ abstract class Grid {
     maxCrossAxisExtent: Grid.smallCardWidth * 2,
     childAspectRatio: StyleString.aspectRatio * 2.2,
     minHeight: MediaQuery.textScalerOf(context).scale(minHeight),
+    minCrossAxisExtent: videoCardHMinWidth(
+      minHeight: MediaQuery.textScalerOf(context).scale(minHeight),
+      childAspectRatio: StyleString.aspectRatio * 2.2,
+    ),
   );
 }
 
@@ -44,13 +71,20 @@ class SliverGridDelegateWithExtentAndRatio extends SliverGridDelegate {
     this.childAspectRatio = 1.0,
     this.mainAxisExtent = 0.0,
     this.minHeight = 0.0,
+    this.minCrossAxisExtent,
   }) : assert(maxCrossAxisExtent > 0),
        assert(mainAxisSpacing >= 0),
        assert(crossAxisSpacing >= 0),
        assert(childAspectRatio > 0),
-       assert(minHeight >= 0);
+       assert(minHeight >= 0),
+       assert(minCrossAxisExtent == null || minCrossAxisExtent > 0);
 
   final double minHeight;
+
+  /// 瓦片宽度下限；为 null 时只按 [maxCrossAxisExtent] 算列数。
+  /// H 卡片左侧封面宽度由瓦片高度决定（固定 aspectRatio），瓦片一窄右侧
+  /// 文字区就放不下播放数/弹幕数而横向溢出。
+  final double? minCrossAxisExtent;
 
   /// The maximum extent of tiles in the cross axis.
   ///
@@ -106,6 +140,16 @@ class SliverGridDelegateWithExtentAndRatio extends SliverGridDelegate {
     // Ensure a minimum count of 1, can be zero and result in an infinite extent
     // below when the window size is 0.
     crossAxisCount = max(1, crossAxisCount);
+    if (minCrossAxisExtent case final minExtent?) {
+      crossAxisCount = max(
+        1,
+        min(
+          crossAxisCount,
+          (constraints.crossAxisExtent / (minExtent + crossAxisSpacing))
+              .floor(),
+        ),
+      );
+    }
     final double usableCrossAxisExtent = max(
       0.0,
       constraints.crossAxisExtent - crossAxisSpacing * (crossAxisCount - 1),
@@ -132,7 +176,9 @@ class SliverGridDelegateWithExtentAndRatio extends SliverGridDelegate {
         oldDelegate.mainAxisSpacing != mainAxisSpacing ||
         oldDelegate.crossAxisSpacing != crossAxisSpacing ||
         oldDelegate.childAspectRatio != childAspectRatio ||
-        oldDelegate.mainAxisExtent != mainAxisExtent;
+        oldDelegate.mainAxisExtent != mainAxisExtent ||
+        oldDelegate.minCrossAxisExtent != minCrossAxisExtent ||
+        oldDelegate.minHeight != minHeight;
     if (flag) layoutCache = null;
     return flag;
   }
